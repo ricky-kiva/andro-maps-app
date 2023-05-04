@@ -1,14 +1,24 @@
 package com.rickyslash.googlemapsapp
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
+import androidx.annotation.ColorInt
+import androidx.annotation.DrawableRes
+import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.DrawableCompat
 
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.OnMapReadyCallback
 import com.google.android.gms.maps.SupportMapFragment
+import com.google.android.gms.maps.model.BitmapDescriptor
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.rickyslash.googlemapsapp.databinding.ActivityMapsBinding
@@ -47,6 +57,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.addMarker(MarkerOptions().position(sydney).title("Marker in Sydney"))
         mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))*/
 
+        // set new marker
         val locUGM = LatLng(-7.770717,110.377724)
         mMap.addMarker(
             MarkerOptions()
@@ -56,10 +67,67 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         )
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(locUGM, 15f))
 
+        // set UI components to be shown
         mMap.uiSettings.isZoomControlsEnabled = true
         mMap.uiSettings.isIndoorLevelPickerEnabled = true
         mMap.uiSettings.isCompassEnabled = true
         mMap.uiSettings.isMapToolbarEnabled = true
+
+        // new Marker on map click-hold
+        mMap.setOnMapLongClickListener { latLng ->
+            mMap.addMarker(
+                MarkerOptions()
+                    .position(latLng)
+                    .title("New Marker")
+                    .snippet("Lat: ${limitDoubleToString(latLng.latitude)}, Long: ${limitDoubleToString(latLng.longitude)}")
+                    .icon(vectorToBitmap(R.drawable.baseline_person_pin_24, Color.parseColor("#E53935")))
+            )
+        }
+
+        // Marker when POI selected
+        mMap.setOnPoiClickListener { poi ->
+            val poiMarker = mMap.addMarker(
+                MarkerOptions()
+                    .position(poi.latLng)
+                    .title(poi.name)
+                    .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE))
+            )
+        }
+    }
+
+    private fun vectorToBitmap(@DrawableRes id: Int, @ColorInt color: Int): BitmapDescriptor {
+        // load vector from drawable resource
+        val vectorDrawable = ResourcesCompat.getDrawable(resources, id, null)
+        if (vectorDrawable == null) {
+            Log.e("BitmapHelper", "Resource not found")
+            return BitmapDescriptorFactory.defaultMarker()
+        }
+
+        // creates new Bitmap with same size as vectorDrawable & configuration of ARGB_8888
+        val bitmap = Bitmap.createBitmap(
+            vectorDrawable.intrinsicWidth,
+            vectorDrawable.intrinsicHeight,
+            Bitmap.Config.ARGB_8888
+        )
+
+        // make canvas to draw vector onto Bitmap object
+        val canvas = Canvas(bitmap)
+        // set bounds of vector drawable to match the size of the canvas
+        vectorDrawable.setBounds(0, 0, canvas.width, canvas.height)
+        // apply color to vectorDrawable
+        DrawableCompat.setTint(vectorDrawable, color)
+        // draw vector drawable to canvas
+        vectorDrawable.draw(canvas)
+        // convert bitmap to BitmapDescriptor
+        return BitmapDescriptorFactory.fromBitmap(bitmap)
+    }
+
+    fun limitDoubleToString(d: Double): String {
+        return if (d.isNaN() || d.isInfinite()) {
+            d.toString()
+        } else {
+            d.toString().substring(0, minOf(6, d.toString().length))
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

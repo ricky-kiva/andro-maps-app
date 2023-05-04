@@ -25,6 +25,8 @@ import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.MarkerOptions
 import com.rickyslash.googlemapsapp.databinding.ActivityMapsBinding
 import android.Manifest
+import android.content.res.Resources
+import com.google.android.gms.maps.model.MapStyleOptions
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -99,6 +101,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         }
 
         getMyLocation()
+        setMapStyle()
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
@@ -121,6 +124,17 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         } else {
             // request permission when insufficient permission
             requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }
+    }
+
+    private fun setMapStyle() {
+        try {
+            val success = mMap.setMapStyle(MapStyleOptions.loadRawResourceStyle(this, R.raw.map_style))
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.")
+            }
+        } catch (e: Resources.NotFoundException) {
+            Log.e(TAG, "Ca't find style. Error:", e)
         }
     }
 
@@ -187,6 +201,10 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             }
         }
     }
+
+    companion object {
+        val TAG = MapsActivity::class.java.simpleName
+    }
 }
 
 // Google Maps: key feature is marking location (Marker), make route (Polyline), make area (Circle), etc
@@ -198,6 +216,9 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 // - https://console.developers.google.com/flows/enableapi?apiid=maps_android_backend&keyType=CLIENT_SIDE_ANDROID&r={SHA1}%3B{com.packagename.appname}
 // --- change {SHA1} & {com.packagename.appname}. Remove the curly braces `{}` also
 // --- to see SHA1, run: `./gradlew signingReport`
+
+// Google Map styling can be done here:
+// - https://mapstyle.withgoogle.com/
 
 // 2 ways of showing map:
 // - using SupportMapFragment. Benefit is don't bother to set map's lifecycle manually

@@ -26,9 +26,12 @@ import com.google.android.gms.maps.model.MarkerOptions
 import com.rickyslash.googlemapsapp.databinding.ActivityMapsBinding
 import android.Manifest
 import android.content.res.Resources
+import android.location.Geocoder
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.android.gms.maps.model.MapStyleOptions
 import com.rickyslash.googlemapsapp.model.TourismPlace
+import java.io.IOException
+import java.util.*
 
 class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
@@ -142,7 +145,8 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         tourismPlace.forEach { tourism ->
             // add new marker
             val latLng = LatLng(tourism.latitude, tourism.longitude)
-            mMap.addMarker(MarkerOptions().position(latLng).title(tourism.name))
+            val address = getAddressName(tourism.latitude, tourism.longitude)
+            mMap.addMarker(MarkerOptions().position(latLng).title(tourism.name).snippet(address))
             // add bounds to intersect every Marker added
             boundsBuilder.include(latLng)
         }
@@ -170,6 +174,23 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         } catch (e: Resources.NotFoundException) {
             Log.e(TAG, "Ca't find style. Error:", e)
         }
+    }
+
+    // sets address name using reverse geocoding
+    @Suppress("DEPRECATION")
+    private fun getAddressName(lat: Double, lon: Double): String? {
+        var addressName: String? = null
+        val geocoder = Geocoder(this@MapsActivity, Locale.getDefault())
+        try {
+            val list = geocoder.getFromLocation(lat, lon, 1)
+            if (list != null && list.size != 0) {
+                addressName = list[0].getAddressLine(0)
+                Log.d(TAG, "getAddressName: $addressName")
+            }
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+        return addressName
     }
 
     private fun vectorToBitmap(@DrawableRes id: Int, @ColorInt color: Int): BitmapDescriptor {
@@ -237,7 +258,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     companion object {
-        val TAG = MapsActivity::class.java.simpleName
+        private val TAG = MapsActivity::class.java.simpleName
     }
 }
 
